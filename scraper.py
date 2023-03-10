@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 from urllib.parse import urlparse,urljoin
+from googlesearch import search
 
 URL = "https://www.physiox.com.sg/"
 page = requests.get(URL)
@@ -68,4 +69,34 @@ def search_google(query):
                 results.append(href.split('url?q=')[1].split('&sa=U')[0])
     return results
 
-print(search_google('physiotherapy singapore'))
+
+def search_google_lib(query):
+    websites = []
+    for website in search(query, num_results=30):
+        websites.append(website)
+    return websites
+
+# search google for websites -> get email from the page -> get subpages -> get email from subpages
+
+def get_emails_from_query(query):
+    # make set of emails
+    emails = set()
+    # search google for websites
+    websites = search_google_lib(query)
+    # get emails from the page
+    for website in websites:
+        response = requests.get(website)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        emails.update(find_emails(str(soup)))
+        # get subpages
+        subpages = get_subpage_urls(website)
+        # get emails from subpages
+        for subpage in subpages:
+            response = requests.get(subpage)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            emails.update(find_emails(str(soup)))
+
+
+    return emails
+
+print(get_emails_from_query("physiotherapy singapore"))
